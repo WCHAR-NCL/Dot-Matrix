@@ -57,7 +57,7 @@ undef("fontX")
 procedure fontX(wks, plot, wchar, x, y, res)
 local wks, plot, wchar, x, y, dum, sizeDM, lenDM, id, offset, charArr, ArrLen
 begin
-    DotDir = "/home/SVane/scripts/NCLscripts/Develop/Dot-Matrix/" 
+    DotDir = "./" 
     sizeDM = res@fontPixelSize
     lenDM = sizeDM/8*sizeDM
     font = "HZK"+sizeDM+res@fontName
