@@ -97,10 +97,10 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
     drawNDCGrid(wks)
 
     ; river = addfile("/home/SVane/software/ncl-6.3.0/China/River4_polyline.shp", "r")
-    stateL = "/home/SVane/software/ncl-6.3.0/China/bou2_4l.shp"
-    riverP = "/home/SVane/software/ncl-6.3.0/China/hyd1_4p.shp"
-    riverL = "/home/SVane/software/ncl-6.3.0/China/hyd1_4l.shp"
-    Prov = "/home/SVane/software/ncl-6.3.0/China/res1_4m.shp"
+    stateL = "./ShapeFile/bou2_4l.shp"
+    riverP = "./ShapeFile/hyd1_4p.shp"
+    riverL = "./ShapeFile/hyd1_4l.shp"
+    Prov = "./ShapeFile/res1_4m.shp"
 
     f = addfile(Prov,"r")
     ; ProvCN = f->NAME      ; GBK encoding...
@@ -124,6 +124,7 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
     ftres@FontThicknessF = 0.3
     ftres@fontPixelSize = 40
     ftres@fontName = "S"
+    ftres@fontAngle=180
     do i = 0,33
       fontX(wks, plot, ProvCN(i), ProvCX(i), ProvCY(i)+1, ftres)
     end do

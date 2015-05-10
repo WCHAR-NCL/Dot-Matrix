@@ -111,6 +111,17 @@ begin
     print("x= "+x+" y= "+y)
     xloc = onedtond(fspan(x-xoffset, x+fontW_NDC-xoffset, sizeDM), (/sizeDM, sizeDM/))
     yloc = transpose(onedtond(fspan(y+yoffset, y-fontW_NDC+yoffset, sizeDM), (/sizeDM, sizeDM/)))
+;;;;;;;;;heyl ;;;;;;;;;;;;;;
+	;if isatt((res,"FontAngle")) then 
+	  ;;recalculate the xloc and yloc to rotate angle
+	  rad=4.*atan(1.)/180.
+	  angle=tofloat(res@fontAngle)*rad
+	;;center xy
+          cx=x-xoffset+fontW_NDC/2.
+	  cy=y+yoffset+fontW_NDC/2.
+          new_xloc=cx+(xloc-cx)*cos(angle)-(yloc-cy)*sin(angle)
+          new_yloc=cy+(xloc-cx)*sin(angle)+(yloc-cy)*cos(angle)
+;;;;;;;;;;heyl  ;;;;;;;;;;;;;; 
 
 ;;--Setup plotting
     plres = True                                            ; Setup the WCHAR resource
@@ -126,11 +137,15 @@ begin
     do i = 0, ArrLen-1
         buffer = getbitsone(dat(offset(i):offset(i)+lenDM-1))
         fdot = reshape(buffer, (/sizeDM,sizeDM/))
-        maXDM =  mask(xloc, fdot, 1) 
-        maYDM = mask(yloc, fdot, 1)
+;        maXDM =  mask(xloc, fdot, 1) 
+;        maYDM = mask(yloc, fdot, 1)
+        maXDM =  mask(new_xloc, fdot, 1)    ;;heyl
+        maYDM = mask(new_yloc, fdot, 1)     ;;heyl
         ; DotMat(gid) = gsn_add_polymarker(wks, plot, maXDM+i*fspace, maYDM, plres)
         ; gid = gid+1 
-        gsn_polymarker_ndc(wks, maXDM+i*fspace, maYDM, plres)     
+	  
+        gsn_polymarker_ndc(wks, maXDM+i*fspace*cos(angle), maYDM+i*fspace*sin(angle), plres)  ;;heyl   
+      ;  gsn_polymarker_ndc(wks, maXDM+i*fspace, maYDM, plres)     
     end do
 
 end
