@@ -50,7 +50,7 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
     ; res@riverThickness = 0.5
     ; res@boundaryColor = "black"
 
-    wks = gsn_open_wks("ps", "mapMicapsWCHAR")
+    wks = gsn_open_wks("ps", "mapsWCHAR")
     gsn_define_colormap(wks, mapColor)  
 
     res@mpLandFillColor = "Transparent"
@@ -97,11 +97,11 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
 
     plot = gsn_csm_map(wks, res)
 
-    ; river = addfile("/home/SVane/software/ncl-6.3.0/China/River4_polyline.shp", "r")
-    stateL = "/home/SVane/software/ncl-6.3.0/China/bou2_4l.shp"
-    riverP = "/home/SVane/software/ncl-6.3.0/China/hyd1_4p.shp"
-    riverL = "/home/SVane/software/ncl-6.3.0/China/hyd1_4l.shp"
-    Prov = "/home/SVane/software/ncl-6.3.0/China/res1_4m.shp"
+    ; river = addfile("./ShapeFile/River4_polyline.shp", "r")
+    stateL = "./ShapeFile/bou2_4l.shp"
+    riverP = "./ShapeFile/hyd1_4p.shp"
+    riverL = "./ShapeFile/hyd1_4l.shp"
+    Prov = "./ShapeFile/res1_4m.shp"
 
     f = addfile(Prov,"r")
     ; ProvCN = f->NAME      ; GBK encoding...
