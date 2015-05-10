@@ -1,3 +1,5 @@
+; gid = 0
+; DotMat = new(100, graphic)
 debug = True
 ;;==============================================================================
 undef("checkChar")
@@ -57,7 +59,8 @@ undef("fontX")
 procedure fontX(wks, plot, wchar, x, y, res)
 local wks, plot, wchar, x, y, dum, sizeDM, lenDM, id, offset, charArr, ArrLen
 begin
-    DotDir = "./" 
+    DotDir = "./"
+    dpi = 96 
     sizeDM = res@fontPixelSize
     lenDM = sizeDM/8*sizeDM
     font = "HZK"+sizeDM+res@fontName
@@ -90,6 +93,25 @@ begin
         print("WCHAR: "+charArr+" ZConal-Code: "+id(:, 0)+\
                     "   Bit-Code: "+id(:, 1)+"   offset: "+offset)
     end if
+;;--Calculate Dot-Matrix location in NDC coordinate
+    ; getvalues wks
+    ;     wkPaperWidthF: PaperW
+    ;     wkPaperHeightF: PaperH
+    ;     wkPaperSize: 
+    ; end getvalues
+    ; print(PaperW+"  H= "+PaperH)
+    fontW_NDC = res@fontSize*dpi/72.*19/1920./8.5
+    fh = res@fontHeightF                                    ; Read the font height setting
+    fspace = fontW_NDC                                      ; space between adjacent WCHAR 
+    xoffset = (ArrLen*(fontW_NDC+fspace)-fspace)/2.         ; font offset to Just the WCHAR 
+    yoffset = fontW_NDC/2.                                  ; font offset to Just the WCHAR
+    if(.not.(isatt(res, "fontNDC")) .or. res@fontNDC.eq.False)then
+        datatondc(plot, x, y, x, y)
+    end if
+    print("x= "+x+" y= "+y)
+    xloc = onedtond(fspan(x-xoffset, x+fontW_NDC-xoffset, sizeDM), (/sizeDM, sizeDM/))
+    yloc = transpose(onedtond(fspan(y+yoffset, y-fontW_NDC+yoffset, sizeDM), (/sizeDM, sizeDM/)))
+
 ;;--Setup plotting
     plres = True                                            ; Setup the WCHAR resource
     plres@gsMarkerColor = res@fontColor                     ; Read the font color setting
@@ -97,45 +119,26 @@ begin
     plres@gsMarkerSizeF = 0.0001                            ; I want fine the dot
     plres@gsMarkerThicknessF = res@FontThicknessF           ; More finer dot
     plres@tfPolyDrawOrder = "PostDraw"                          ; Weird!!! It have no effect!!!
-    fh = res@fontHeightF                                    ; Read the font height setting
-    fspace = res@fontHeightF*35*sizeDM/32.                  ; space between adjacent WCHAR 
-    xoffset = sizeDM*fh+ArrLen*fspace/4.                    ; font offset to Just the WCHAR 
-    yoffset = sizeDM*fh/4.                                  ; font offset to Just the WCHAR
+;;--Read dot data and Dotting
     print("Dotting")
-
-    xloc = onedtond(fspan(x-xoffset, x+sizeDM*fh-xoffset, sizeDM), (/sizeDM, sizeDM/))
-    yloc = transpose(onedtond(fspan(y+yoffset, y-sizeDM*fh+yoffset, sizeDM), (/sizeDM, sizeDM/)))
-;;--Process a percular dot fonts
-    ; if (sizeDM.eq.24)then
-    ;     xloc := transpose(xloc)
-    ;     yloc := transpose(yloc)
-    ; end if
-;;--Read dot data
     f = DotDir+"FontLib/HZK"+sizeDM+"/"+font
     dat = cbinread(f, -1, "byte")
-    fdot = new((/sizeDM, sizeDM/), byte)
-
     do i = 0, ArrLen-1
         buffer = getbitsone(dat(offset(i):offset(i)+lenDM-1))
         fdot = reshape(buffer, (/sizeDM,sizeDM/))
         maXDM =  mask(xloc, fdot, 1) 
         maYDM = mask(yloc, fdot, 1)
-        ; xx = tofloat(ndtooned(maXDM+i*fspace))
-        ; yy = tofloat(ndtooned(maYDM))
-        ; printVarSummary(xx)
-        ; XDM = new(dimsizes(xx),float)
-        ; YDM = new(dimsizes(yy),float)
-        ; datatondc(plot, xx, yy, XDM, YDM)
-        ; gsn_polymarker_ndc(wks, onedtond(XDM, (/sizeDM,sizeDM/)), onedtond(YDM, (/sizeDM,sizeDM/)), plres)    
-        gsn_polymarker(wks, plot, maXDM+i*fspace, maYDM, plres)     
+        ; DotMat(gid) = gsn_add_polymarker(wks, plot, maXDM+i*fspace, maYDM, plres)
+        ; gid = gid+1 
+        gsn_polymarker_ndc(wks, maXDM+i*fspace, maYDM, plres)     
     end do
+
 end
+
 ;;==============================================================================
-undef("fontV")
-procedure fontV(str:string)
-begin
-    id = encode(str, "GB2312")
-    print(id)
-
-
-end 
+; undef("fontV")
+; procedure fontV(str:string)
+; begin
+;     id = encode(str, "GB2312")
+;     print(id)
+; end 
