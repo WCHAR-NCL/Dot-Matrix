@@ -1,24 +1,9 @@
 ;;==============================================================================
 ;;--Global variables list
 debug = True
+;;--Load useful lib file
+load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"
 ;;==============================================================================
-
-;;==============================================================================
-undef("checkChar")
-function checkChar(wchar)
-local wchar
-begin
-    alpha = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-    charArr = tochar(wchar)
-    flag = True
-    do i = 0, dimsizes(charArr)-1
-        if (isStrSubset(alpha, tostring(charArr(i)))) then
-            flag = False
-            break
-        end if
-    end do
-    return(flag)
-end
 
 ;;==============================================================================
 undef("encode")
@@ -67,31 +52,29 @@ begin
     lenDM = sizeDM/8*sizeDM
     dimDM = (/sizeDM, sizeDM/)
     font = "HZK"+sizeDM+res@fontName
-    alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 ;;--Get ID from Table
-    if(checkChar(wchar))then
+;;--charecter check method is improved by FANG Huan (IAP)
+    charWC = tochar(wchar)
+    if(min(toint(charWC)).gt.127)then
         charArr = str_split_by_length(wchar, 3)
     else
-        charX = tochar(wchar)
-        charArr = new(dimsizes(charX), string)
-        ix = 0
-        i = 0
-        do while(i.lt.dimsizes(charX))
-            if(isStrSubset(alpha, tostring(charX(i))))then
-                charArr(ix) = tostring(charX(i))
-                i = i+1
-            else
-                charArr(ix) = tostring(charX(i:i+2))
-                i = i+3
-            end if
-            ix = ix+1
-        end do
-        charArr := charArr(ind(.not.ismissing(charArr)))
+        halfID = ind(toint(charWC).le.126)  ; half width char index in raw char
+        fullID = ind(toint(charWC).gt.126)  ; full width char index in raw char
+        charNum = dimsizes(halfID)+dimsizes(fullID)/3
+        charID = array_append_record (halfID, fullID(::3), 0)
+        qsort(charID)
+        hID = get1Dindex(charID, halfID)      ; half width char index in true char
+        fID = get1Dindex(charID, fullID(::3)) ; full width char index in true char
+        charMap = where(toint(charWC(charID)).gt.126, 3, 1)
+        charArr = str_split_by_length(wchar, charMap)
+        print("half char: "+charArr(hID)+"  index: "+hID)
+        print("full char: "+charArr(fID)+"  index: "+fID)
     end if
+
     ArrLen = dimsizes(charArr)
     id = encode(charArr, DotDir+"FontLib/CodeTable/", "GB2312")
     offset = ( (id(:, 0)-1) * 94 + id(:, 1)-1) * lenDM
-;;--Calculate Dot-Matrix location in NDC coordinate
+;;--Calculate font width in NDC coordinate
     ; getvalues wks
     ;     wkPaperWidthF: PaperW
     ;     wkPaperHeightF: PaperH
@@ -99,7 +82,7 @@ begin
     ; end getvalues
     ; print(PaperW+"  H= "+PaperH)
     fontW = res@fontSize*dpi/72.*19/1920./8.5
-    fspace = fontW                                      ; space between adjacent WCHAR
+    fspace = fontW                  ; space between adjacent WCHAR, set to Zero
 ;;--Get @fontJust attribute and calulate offset at x and y direction 
     if(isatt(res, "fontJust").and.res@fontJust.ne."CenterCenter")then
         if(res@fontJust.eq."TopLeft")then
@@ -125,6 +108,7 @@ begin
     if(isatt(res, "fontYoffset"))then
         y = y+res@fontYoffset
     end if
+;;--Calculate Dot-Matrix location in NDC coordinate
     xloc = onedtond(fspan(x-xoffset, x-xoffset+fontW, sizeDM), dimDM)
     yloc = transpose(onedtond(fspan(y+yoffset, y+yoffset-fontW, sizeDM), dimDM))
 ;;--Get @fontAngle attribute and do coordinate transform
@@ -150,12 +134,12 @@ begin
 ;;--Delete some variables
     delete([/xloc, yloc/])
 ;;--Setup plotting
-    plres = True                                            ; Setup the WCHAR resource
-    plres@gsMarkerColor = res@fontColor                     ; Read the font color setting
-    plres@gsMarkerIndex = 1                                 ; little dot
-    plres@gsMarkerSizeF = 0.0001                            ; I want fine the dot
-    plres@gsMarkerThicknessF = res@fontThicknessF           ; More finer dot
-    plres@tfPolyDrawOrder = "PostDraw"                      ; Weird!!! It have no effect!!!
+    plres = True                                  ; Setup the WCHAR resource
+    plres@gsMarkerColor = res@fontColor           ; Read the font color setting
+    plres@gsMarkerIndex = 1                       ; little dot
+    plres@gsMarkerSizeF = 0.0000001               ; I want the finest dots
+    plres@gsMarkerThicknessF = 0.0000001          ; finest dots
+    ; plres@tfPolyDrawOrder = "PostDraw"            
 ;;--Read dot data and Dotting
     print("Dotting")
     f = DotDir+"FontLib/HZK"+sizeDM+"/"+font

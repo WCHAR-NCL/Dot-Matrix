@@ -1,7 +1,7 @@
-load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
+; load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
-load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
-load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"
+; load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
+; load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"
 load "WCHAR.ncl"
 begin
 
@@ -92,10 +92,10 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
     ; drawNDCGrid(wks)
 
     ; river = addfile("/home/SVane/software/ncl-6.3.0/China/River4_polyline.shp", "r")
-    stateL = "./ShapeFile/bou2_4l.shp"
-    riverP = "./ShapeFile/hyd1_4p.shp"
-    riverL = "./ShapeFile/hyd1_4l.shp"
-    Prov = "./ShapeFile/res1_4m.shp"
+    stateL = "/home/SVane/software/ncl-6.3.0/China/bou2_4l.shp"
+    riverP = "/home/SVane/software/ncl-6.3.0/China/hyd1_4p.shp"
+    riverL = "/home/SVane/software/ncl-6.3.0/China/hyd1_4l.shp"
+    Prov = "/home/SVane/software/ncl-6.3.0/China/res1_4m.shp"
 
     shpres = True
     shpres@gsLineColor = 4
@@ -116,7 +116,7 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
     dum = gsn_add_text(wks, plot, tostring(ypos), xpos, ypos, txres)
 ;;--Dot the province location    
     f = addfile(Prov,"r")
-    ; ProvCN = f->NAME      ; GBK encoding...
+    ProvCN = f->NAME      ; GBK encoding...
     ProvCX = tofloat(f->x)
     ProvCY = tofloat(f->y) 
     pmres = True
@@ -125,9 +125,12 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
     pmres@gsMarkerColor = "red"
     pmres@tfPolyDrawOrder = "PostDraw"
     provloc = gsn_add_polymarker(wks, plot, ProvCX, ProvCY, pmres)
+;;--
+    ; print(ProvCN)
 ;;--Must Do
     draw(plot)
 ;;--Draw province name
+    time1 = get_cpu_time()
     ProvCN = (/"北京", "天津", "石家庄", "太原", "呼和浩特", "沈阳", "长春", \
                "哈尔滨", "上海", "南京", "杭州", "合肥", "福州", "南昌", \
                 "济南", "郑州", "武汉", "长沙", "广州", "南宁", "海口", \
@@ -135,24 +138,26 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
                 "西宁", "银川", "乌鲁木齐", "台北", "澳门", "香港"/)
     ftres = True
     ftres@fontColor = "grey30"
-    ftres@fontSize = 6
-    ftres@fontThicknessF = 0.3
-    ftres@fontPixelSize = 40
+    ftres@fontSize = 10
+    ftres@fontPixelSize = 128
     ; ftres@fontJust = "CenterCenter"
     ftres@fontName = "S"
     ftres@fontAngle = 0.
     ftres@fontYoffset = 0.01
-    do i = 0,33
-      fontX(wks, plot, ProvCN(i), ProvCX(i), ProvCY(i), ftres)
-    end do 
+    ; do i = 0,33
+    ;   fontX(wks, plot, ProvCN(i), ProvCX(i), ProvCY(i), ftres)
+    ; end do
+    time2 = get_cpu_time()
+    print("Total time: "+(time2-time1))
 ;;-- A title
     ftres@fontHeightF = 0.03
     ftres@fontThicknessF = 0.5
-    ftres@fontPixelSize = 40
-    ftres@fontSize = 12
-    ftres@fontName = "H"
+    ftres@fontPixelSize = 128
+    ftres@fontSize = 10
+    ftres@fontName = "S"
     ftres@fontNDC = True
-    fontX(wks, plot, "NCL图形中文打印示例", 0.5, 0.8, ftres)
+    fontX(wks, plot, "NCL图形A中文打B印示F例", 0.5, 0.76, ftres)
+    print("Total time: "+(get_cpu_time()-time2))
 ;;--Finally frame the workstation
     frame(wks)
 end
