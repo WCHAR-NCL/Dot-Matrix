@@ -1,6 +1,8 @@
-; gid = 0
-; DotMat = new(100, graphic)
+;;==============================================================================
+;;--Global variables list
 debug = True
+;;==============================================================================
+
 ;;==============================================================================
 undef("checkChar")
 function checkChar(wchar)
@@ -63,6 +65,7 @@ begin
     dpi = 96 
     sizeDM = res@fontPixelSize
     lenDM = sizeDM/8*sizeDM
+    dimDM = (/sizeDM, sizeDM/)
     font = "HZK"+sizeDM+res@fontName
     alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
 ;;--Get ID from Table
@@ -88,11 +91,6 @@ begin
     ArrLen = dimsizes(charArr)
     id = encode(charArr, DotDir+"FontLib/CodeTable/", "GB2312")
     offset = ( (id(:, 0)-1) * 94 + id(:, 1)-1) * lenDM
-;--DEBUG MODEL
-    if(debug)then
-        print("WCHAR: "+charArr+" ZConal-Code: "+id(:, 0)+\
-                    "   Bit-Code: "+id(:, 1)+"   offset: "+offset)
-    end if
 ;;--Calculate Dot-Matrix location in NDC coordinate
     ; getvalues wks
     ;     wkPaperWidthF: PaperW
@@ -100,52 +98,73 @@ begin
     ;     wkPaperSize: 
     ; end getvalues
     ; print(PaperW+"  H= "+PaperH)
-    fontW_NDC = res@fontSize*dpi/72.*19/1920./8.5
-    fh = res@fontHeightF                                    ; Read the font height setting
-    fspace = fontW_NDC                                      ; space between adjacent WCHAR 
-    xoffset = (ArrLen*(fontW_NDC+fspace)-fspace)/2.         ; font offset to Just the WCHAR 
-    yoffset = fontW_NDC/2.                                  ; font offset to Just the WCHAR
+    fontW = res@fontSize*dpi/72.*19/1920./8.5
+    fspace = fontW                                      ; space between adjacent WCHAR
+;;--Get @fontJust attribute and calulate offset at x and y direction 
+    if(isatt(res, "fontJust").and.res@fontJust.ne."CenterCenter")then
+        if(res@fontJust.eq."TopLeft")then
+            xoffset = 0.
+            yoffset = 0.
+        else if(res@fontJust.eq."TopCenter")then
+                xoffset = 0.
+                yoffset = fontW/2.
+            end if
+        end if
+    else
+        xoffset = ArrLen*fontW/2.         ; font offset to Just the WCHAR 
+        yoffset = fontW/2.                ; font offset to Just the WCHAR
+    end if
     if(.not.(isatt(res, "fontNDC")) .or. res@fontNDC.eq.False)then
         datatondc(plot, x, y, x, y)
     end if
-    print("x= "+x+" y= "+y)
-    xloc = onedtond(fspan(x-xoffset, x+fontW_NDC-xoffset, sizeDM), (/sizeDM, sizeDM/))
-    yloc = transpose(onedtond(fspan(y+yoffset, y-fontW_NDC+yoffset, sizeDM), (/sizeDM, sizeDM/)))
-;;;;;;;;;heyl ;;;;;;;;;;;;;;
-	;if isatt((res,"FontAngle")) then 
-	  ;;recalculate the xloc and yloc to rotate angle
-	  rad=4.*atan(1.)/180.
-	  angle=tofloat(res@fontAngle)*rad
-	;;center xy
-          cx=x-xoffset+fontW_NDC/2.
-	  cy=y+yoffset+fontW_NDC/2.
-          new_xloc=cx+(xloc-cx)*cos(angle)-(yloc-cy)*sin(angle)
-          new_yloc=cy+(xloc-cx)*sin(angle)+(yloc-cy)*cos(angle)
-;;;;;;;;;;heyl  ;;;;;;;;;;;;;; 
-
+;;--Get @fontXoffset attribute and calulate some offsets
+    if(isatt(res, "fontXoffset"))then
+        x = x+res@fontXoffset
+    end if
+;;--Get @fontYoffset attribute and calulate some offsets
+    if(isatt(res, "fontYoffset"))then
+        y = y+res@fontYoffset
+    end if
+    xloc = onedtond(fspan(x-xoffset, x-xoffset+fontW, sizeDM), dimDM)
+    yloc = transpose(onedtond(fspan(y+yoffset, y+yoffset-fontW, sizeDM), dimDM))
+;;--Get @fontAngle attribute and do coordinate transform
+;;--Finished by HE Yongli (May 11 2015)
+    if (isatt(res,"fontAngle")) then
+        ;;recalculate the xloc and yloc to rotate angle
+        DEGTORAD = 0.017453292519943
+        angle = tofloat(res@fontAngle)*DEGTORAD
+        ;;center xy
+        cx = x-xoffset+ArrLen*fontW/2.
+        cy = y+yoffset-fontW/2.
+        xloc_R = cx+(xloc-cx)*cos(angle)-(yloc-cy)*sin(angle)
+        yloc_R = cy+(xloc-cx)*sin(angle)+(yloc-cy)*cos(angle)
+    else 
+        angle = 0.
+    end if
+;--DEBUG MODEL
+    if(debug)then
+        print("WCHAR: "+charArr+" ZConal-Code: "+id(:, 0)+\
+                    "   Bit-Code: "+id(:, 1)+"   offset: "+offset)
+        print("x= "+x+" y= "+y)
+    end if    
+;;--Delete some variables
+    delete([/xloc, yloc/])
 ;;--Setup plotting
     plres = True                                            ; Setup the WCHAR resource
     plres@gsMarkerColor = res@fontColor                     ; Read the font color setting
     plres@gsMarkerIndex = 1                                 ; little dot
     plres@gsMarkerSizeF = 0.0001                            ; I want fine the dot
-    plres@gsMarkerThicknessF = res@FontThicknessF           ; More finer dot
-    plres@tfPolyDrawOrder = "PostDraw"                          ; Weird!!! It have no effect!!!
+    plres@gsMarkerThicknessF = res@fontThicknessF           ; More finer dot
+    plres@tfPolyDrawOrder = "PostDraw"                      ; Weird!!! It have no effect!!!
 ;;--Read dot data and Dotting
     print("Dotting")
     f = DotDir+"FontLib/HZK"+sizeDM+"/"+font
     dat = cbinread(f, -1, "byte")
     do i = 0, ArrLen-1
-        buffer = getbitsone(dat(offset(i):offset(i)+lenDM-1))
-        fdot = reshape(buffer, (/sizeDM,sizeDM/))
-;        maXDM =  mask(xloc, fdot, 1) 
-;        maYDM = mask(yloc, fdot, 1)
-        maXDM =  mask(new_xloc, fdot, 1)    ;;heyl
-        maYDM = mask(new_yloc, fdot, 1)     ;;heyl
-        ; DotMat(gid) = gsn_add_polymarker(wks, plot, maXDM+i*fspace, maYDM, plres)
-        ; gid = gid+1 
-	  
+        fdot = reshape(getbitsone(dat(offset(i):offset(i)+lenDM-1)), dimDM)
+        maXDM =  mask(xloc_R, fdot, 1)
+        maYDM = mask(yloc_R, fdot, 1) 
         gsn_polymarker_ndc(wks, maXDM+i*fspace*cos(angle), maYDM+i*fspace*sin(angle), plres)  ;;heyl   
-      ;  gsn_polymarker_ndc(wks, maXDM+i*fspace, maYDM, plres)     
     end do
 
 end
