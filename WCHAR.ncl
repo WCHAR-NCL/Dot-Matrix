@@ -52,14 +52,20 @@ begin
     lenDM = sizeDM/8*sizeDM
     dimDM = (/sizeDM, sizeDM/)
     font = "HZK"+sizeDM+res@fontName
+    txres = True                                  ; Setup the half text resource
+    
 ;;--Get ID from Table
 ;;--charecter check method is improved by FANG Huan (IAP)
     charWC = tochar(wchar)
     if(min(toint(charWC)).gt.127)then
         charArr = str_split_by_length(wchar, 3)
+        fullID  = ind(toint(charWC).gt.127)  ; full width char index in raw char
+        fID     = fullID(::3)/3 ; full width char index in true char
+        id      = encode(charArr, DotDir+"FontLib/CodeTable/", "GB2312")
+        isMixed = False
     else
-        halfID = ind(toint(charWC).le.126)  ; half width char index in raw char
-        fullID = ind(toint(charWC).gt.126)  ; full width char index in raw char
+        halfID = ind(toint(charWC).le.127)  ; half width char index in raw char
+        fullID = ind(toint(charWC).gt.127)  ; full width char index in raw char
         charNum = dimsizes(halfID)+dimsizes(fullID)/3
         charID = array_append_record (halfID, fullID(::3), 0)
         qsort(charID)
@@ -69,10 +75,11 @@ begin
         charArr = str_split_by_length(wchar, charMap)
         print("half char: "+charArr(hID)+"  index: "+hID)
         print("full char: "+charArr(fID)+"  index: "+fID)
-    end if
+        id = encode(charArr(fID), DotDir+"FontLib/CodeTable/", "GB2312")
 
+        isMixed = True
+    end if
     ArrLen = dimsizes(charArr)
-    id = encode(charArr, DotDir+"FontLib/CodeTable/", "GB2312")
     offset = ( (id(:, 0)-1) * 94 + id(:, 1)-1) * lenDM
 ;;--Calculate font width in NDC coordinate
     ; getvalues wks
@@ -82,7 +89,6 @@ begin
     ; end getvalues
     ; print(PaperW+"  H= "+PaperH)
     fontW = res@fontSize*dpi/72.*19/1920./8.5
-    fspace = fontW                  ; space between adjacent WCHAR, set to Zero
 ;;--Get @fontJust attribute and calulate offset at x and y direction 
     if(isatt(res, "fontJust").and.res@fontJust.ne."CenterCenter")then
         if(res@fontJust.eq."TopLeft")then
@@ -115,6 +121,7 @@ begin
 ;;--Finished by HE Yongli (May 11 2015)
     if (isatt(res,"fontAngle")) then
         ;;recalculate the xloc and yloc to rotate angle
+        txres@txAngleF=res@fontAngle*1.0
         DEGTORAD = 0.017453292519943
         angle = tofloat(res@fontAngle)*DEGTORAD
         ;;center xy
@@ -124,11 +131,19 @@ begin
         yloc_R = cy+(xloc-cx)*sin(angle)+(yloc-cy)*cos(angle)
     else 
         angle = 0.
+        txres@txAngleF=0.0
     end if
 ;--DEBUG MODEL
     if(debug)then
-        print("WCHAR: "+charArr+" ZConal-Code: "+id(:, 0)+\
-                    "   Bit-Code: "+id(:, 1)+"   offset: "+offset)
+        if(isMixed)then
+            ; debug for Mix Full and Half Char
+            print("WCHAR: "+charArr(fID)+" ZConal-Code: "+id(:, 0)+\
+                        "   Bit-Code: "+id(:, 1)+"   offset: "+offset)
+        else
+            ; debug for Full Char
+            print("WCHAR: "+charArr+" ZConal-Code: "+id(:, 0)+\
+                        "   Bit-Code: "+id(:, 1)+"   offset: "+offset)
+        end if
         print("x= "+x+" y= "+y)
     end if    
 ;;--Delete some variables
@@ -140,15 +155,40 @@ begin
     plres@gsMarkerSizeF = 0.0000001               ; I want the finest dots
     plres@gsMarkerThicknessF = 0.0000001          ; finest dots
     ; plres@tfPolyDrawOrder = "PostDraw"            
+;;--Setup plotting for half char
+    txres@txFontColor= res@fontColor           ; Read the font color setting
+    txres@txFontHeightF=0.01200000  ; the fontheight will be  modified later
+    ;txres@gsMarkerIndex = 1                       ; little dot
+    ;txres@gsMarkerSizeF = 0.0000001               ; I want the finest dots
+    ;txres@gsMarkerThicknessF = 0.0000001          ; finest dots
 ;;--Read dot data and Dotting
     print("Dotting")
     f = DotDir+"FontLib/HZK"+sizeDM+"/"+font
     dat = cbinread(f, -1, "byte")
+
+    fspace=0.0 ; count space for WCHAR
+    fNum=0 ;count full Char number
+    maXDM =xloc_R ; set for half Char in the begin of the string
+    maYDM =yloc_R
+
     do i = 0, ArrLen-1
-        fdot = reshape(getbitsone(dat(offset(i):offset(i)+lenDM-1)), dimDM)
-        maXDM =  mask(xloc_R, fdot, 1)
-        maYDM = mask(yloc_R, fdot, 1) 
-        gsn_polymarker_ndc(wks, maXDM+i*fspace*cos(angle), maYDM+i*fspace*sin(angle), plres)  ;;heyl   
+        if(.not.ismissing(ind(fID.eq.i)))then
+            fdot  = reshape(getbitsone(dat(offset(fNum):offset(fNum)+lenDM-1)), dimDM)
+            maXDM:= mask(xloc_R, fdot, 1)
+            maYDM:= mask(yloc_R, fdot, 1)
+            gsn_polymarker_ndc(wks, maXDM+fspace*cos(angle), maYDM+fspace*sin(angle), plres)  ;;heyl   
+            fspace = fspace+fontW
+            fNum   = fNum+1
+        else 
+            if(.not.ismissing(ind(hID.eq.i)))then
+                gsn_text_ndc(wks,charArr(i), max(maXDM)*2/5.0+min(maXDM)*3/5.0+\
+                fspace*cos(angle), max(maYDM)*1/2.0+min(maYDM)*1/2.0+\
+                fspace*sin(angle), txres)  ;;heyl   
+                fspace=fspace+fontW*0.90
+            else
+                ; not use for currently
+            end if
+        end if
     end do
 
 end
