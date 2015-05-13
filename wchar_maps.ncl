@@ -85,17 +85,17 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
   res@tmBorderThicknessF = 1
 
 
-
     wks = gsn_open_wks("ps", "mapMicapsWCHAR")
+    wks@wkPaperSize = "A3"
     gsn_define_colormap(wks, mapColor)  
     plot = gsn_csm_map(wks, res)
     ; drawNDCGrid(wks)
 
     ; river = addfile("/home/SVane/software/ncl-6.3.0/China/River4_polyline.shp", "r")
-    stateL = "/home/SVane/software/ncl-6.3.0/China/bou2_4l.shp"
-    riverP = "/home/SVane/software/ncl-6.3.0/China/hyd1_4p.shp"
-    riverL = "/home/SVane/software/ncl-6.3.0/China/hyd1_4l.shp"
-    Prov = "/home/SVane/software/ncl-6.3.0/China/res1_4m.shp"
+    stateL = "./ShapeFile/bou2_4l.shp"
+    riverP = "./ShapeFile/hyd1_4p.shp"
+    riverL = "./ShapeFile/hyd1_4l.shp"
+    Prov = "./ShapeFile/res1_4m.shp"
 
     shpres = True
     shpres@gsLineColor = 4
@@ -131,32 +131,30 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
     draw(plot)
 ;;--Draw province name
     time1 = get_cpu_time()
-    ProvCN = (/"北京", "天津", "石家庄", "太原", "呼和浩特", "沈阳", "长春", \
-               "哈尔滨", "上海", "南京", "杭州", "合肥", "福州", "南昌", \
-                "济南", "郑州", "武汉", "长沙", "广州", "南宁", "海口", \
-                "成都", "重庆", "贵阳", "昆明", "拉萨", "西安", "兰州", \
-                "西宁", "银川", "乌鲁木齐", "台北", "澳门", "香港"/)
     ftres = True
-    ftres@fontColor = "grey30"
-    ftres@fontSize = 10
-    ftres@fontPixelSize = 128
-    ; ftres@fontJust = "CenterCenter"
-    ftres@fontName = "S"
-    ftres@fontAngle = 0.
-    ftres@fontYoffset = 0.01
-    ; do i = 0,33
-    ;   fontX(wks, plot, ProvCN(i), ProvCX(i), ProvCY(i), ftres)
-    ; end do
+    ; ftres@fontColor = "grey30"
+    ftres@fontSize = 12
+    ftres@fontQuality = "Medium"
+    ; ftres@fontJust = "CenterCenter" 
+    ; ftres@fontName = "S"
+     ftres@fontAngle = 0.
+    ; ftres@fontXoffset = -0.01
+    ; ftres@fontYoffset = 0.01
+    ftres@fontEncoding = "GBK"
+    print(ProvCN(0))
+    do i = 0,33
+      fontX(wks, plot, ProvCN(i), ProvCX(i), ProvCY(i), ftres)
+    end do
     time2 = get_cpu_time()
     print("Total time: "+(time2-time1))
 ;;-- A title
-    ftres@fontHeightF = 0.03
-    ftres@fontThicknessF = 0.5
-    ftres@fontPixelSize = 128
+    delete(ftres@fontEncoding)
     ftres@fontSize = 10
     ftres@fontName = "S"
     ftres@fontNDC = True
-    fontX(wks, plot, "NCL图形A中文打B印示F例", 0.5, 0.76, ftres)
+    ftres@fontAngle = 0
+    fontX(wks, plot, "NCL图形中ts文f打s印示例", 0.5, 0.76, ftres)
+    fontX(wks, plot, "HFDLEFSLSFFATIQPG文f打s印*(@*#0示例", 0.5, 0.82, ftres)
     print("Total time: "+(get_cpu_time()-time2))
 ;;--Finally frame the workstation
     frame(wks)
