@@ -20,10 +20,6 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
     res@vpWidthF = 0.8
     res@vpHeightF = 0.8
 
-    ; res@mpMinLatF = 10
-    ; res@mpMaxLatF = 65
-    ; res@mpMinLonF = 85
-    ; res@mpMaxLonF = 140
 
     res@mpProjection        = "LambertConformal"
     res@mpLambertParallel1F = 30.
@@ -39,23 +35,19 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
     res@mpGridSpacingF = 10
     ; res@mpGridLineDashPattern  = 1
     res@mpGridAndLimbOn = True
-    ; res@mpGridLineColor = "grey"
 
-
-
-    res@mpLandFillColor = "Transparent"
     res@mpLandFillColor = 2
     res@mpOceanFillColor = 3
     res@mpInlandWaterFillColor = 3
 
   ; res@mpDataSetName         = "Earth..4"   ; This new database contains
   ;                                         ; divisions for other countries.
-  ; res@mpDataBaseVersion     = "Hi'''///;ghRes"  ; Medium resolution database
+  ; res@mpDataBaseVersion     = "HighRes"  ; Medium resolution database
   ; res@mpOutlineOn           = True         ; Turn on map outlines
   ; res@mpOutlineSpecifiers   = (/"China:states","Taiwan"/)       ;China:states
   ; res@mpGeophysicalLineColor      = "grey60"
   ; res@mpGeophysicalLineThicknessF = 0.02
-  ; res@mpNationalLineColor         = "grey0"
+  ; ; res@mpNationalLineColor         = "grey0"
   ; res@mpNationalLineThicknessF    = 0.06
   ; res@mpProvincialLineColor       = 4
   ; res@mpProvincialLineThicknessF  = 0.02
@@ -78,20 +70,15 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
   res@tmXTOn = False
   res@tmYLOn = False
   res@tmYROn = False
-  ; res@tmXBBorderOn = False
-  ; res@tmXTBorderOn = False
-  ; res@tmYLBorderOn = False
-  ; res@tmYRBorderOn = False
   res@tmBorderThicknessF = 1
 
 
     wks = gsn_open_wks("ps", "mapMicapsWCHAR")
-    wks@wkPaperSize = "A3"
+    ; wks@wkPaperSize = "A3"
     gsn_define_colormap(wks, mapColor)  
     plot = gsn_csm_map(wks, res)
     ; drawNDCGrid(wks)
 
-    ; river = addfile("/home/SVane/software/ncl-6.3.0/China/River4_polyline.shp", "r")
     stateL = "./ShapeFile/bou2_4l.shp"
     riverP = "./ShapeFile/hyd1_4p.shp"
     riverL = "./ShapeFile/hyd1_4l.shp"
@@ -132,16 +119,15 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
 ;;--Draw province name
     time1 = get_cpu_time()
     ftres = True
-    ; ftres@fontColor = "grey30"
-    ftres@fontSize = 12
-    ftres@fontQuality = "Medium"
+    ftres@fontColor = "grey30"
+    ftres@fontSize = 5
+    ftres@fontQuality = "ExtraHigh"
     ; ftres@fontJust = "CenterCenter" 
     ; ftres@fontName = "S"
-     ftres@fontAngle = 0.
-    ; ftres@fontXoffset = -0.01
-    ; ftres@fontYoffset = 0.01
+     ; ftres@fontAngleF = 0.
+    ; ftres@fontXoffsetF = -0.01
+    ftres@fontYoffsetF = 0.01
     ftres@fontEncoding = "GBK"
-    print(ProvCN(0))
     do i = 0,33
       fontX(wks, plot, ProvCN(i), ProvCX(i), ProvCY(i), ftres)
     end do
@@ -149,12 +135,9 @@ mapColor = (/ "(/1.00, 1.00, 1.00/)", "(/0.00, 0.00, 0.00/)", \
     print("Total time: "+(time2-time1))
 ;;-- A title
     delete(ftres@fontEncoding)
-    ftres@fontSize = 10
-    ftres@fontName = "S"
     ftres@fontNDC = True
-    ftres@fontAngle = 0
-    fontX(wks, plot, "NCL图形中ts文f打s印示例", 0.5, 0.76, ftres)
-    fontX(wks, plot, "HFDLEFSLSFFATIQPG文f打s印*(@*#0示例", 0.5, 0.82, ftres)
+    ftres@fontSize = 10
+    fontX(wks, plot, "NCL中文打印示例", 0.5, 0.85, ftres)
     print("Total time: "+(get_cpu_time()-time2))
 ;;--Finally frame the workstation
     frame(wks)
