@@ -1,3 +1,15 @@
+;;******************************************************************************
+;;-------------Developers-------------
+;;      SHEN Wenqiang  (沈文强)    NJU
+;;      HE Yongli      (何永利)    LZU 
+;;      FANG Huan      (方欢)    　IAP
+;;      ZHAO Yang      (赵阳)    　CAMS
+;;      FU Zhipeng     (付志鹏)    NJU
+;;-----------Copyright Clarify--------
+;; Copyright©2015 [SHEN Wenqiang, HE Yongli, FANG Huan, ZHAO Yang, FU Zhipeng]
+;; email: wchar_ncl@163.com
+;; latest revise at 2015-5
+;;******************************************************************************
 ;;==============================================================================
 ;;--Global variables list
 debug = True
