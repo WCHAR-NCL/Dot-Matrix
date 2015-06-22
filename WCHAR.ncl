@@ -12,10 +12,26 @@
 ;;******************************************************************************
 ;;==============================================================================
 ;;--Global variables list
-debug = True
+debug = False
 ;;--Load useful lib file
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"
 ;;==============================================================================
+
+
+;;==============================================================================
+;; Check input string, if it include chinese font, return False
+undef("fontCheck")
+function fontCheck(wchar)
+begin
+
+    intChar = toint(tochar(wchar))
+    if(max(intChar).lt.128)then
+        return False
+    else
+        return True
+    end if
+end
+
 
 ;;==============================================================================
 undef("fontX")
@@ -173,4 +189,157 @@ begin
             end if
         end if
     end do
+end
+
+
+;;==============================================================================
+;; loop to write 1-d wide-char array 
+undef("fontArray")
+procedure fontArray(wks, plot, wchar, xarr, yarr, ftres)
+begin
+    do i = 0, dimsizes(wchar)-1
+        if (dimsizes(yarr).eq.1) then
+            fontX(wks, plot, wchar(i), xarr(i), yarr, ftres)
+        else if (dimsizes(xarr).eq.1) then
+            fontX(wks, plot, wchar(i), xarr, yarr(i), ftres)
+        else
+            fontX(wks, plot, wchar(i), xarr(i), yarr(i), ftres)
+        end if
+        end if
+    end do
+end
+
+
+;;==============================================================================
+;; fontTitle retrive tiMainString, gsnLeftString, gsnRightString, tiXAxisString,
+;; tiYAxisString and check if it includes chinese font, then attach it to plot
+undef("fontTitle")
+procedure fontTitle(wks, plot, res)
+begin
+hasMainString = isatt(res,"tiMainString").and.fontCheck(res@tiMainString)
+hasLeftString = isatt(res,"tiXAxisString").and.fontCheck(res@gsnLeftString)
+hasRightString = isatt(res,"tiYAxisString").and.fontCheck(res@gsnRightString)
+hasXAxisString = isatt(res,"tiXAxisString").and.fontCheck(res@tiXAxisString)
+hasYAxisString = isatt(res,"tiYAxisString").and.fontCheck(res@tiYAxisString)
+hasXBLabels = isatt(res,"tmXBLabels").and.fontCheck(res@tmXBLabels)
+hasYLLabels = isatt(res,"tmYLLabels").and.fontCheck(res@tmYLLabels)
+print(hasXBLabels)
+;;--Reset    
+    if(hasMainString)then
+        setvalues plot
+            "tiMainString": ""
+        end setvalues
+    end if
+    if(hasLeftString)then
+        setvalues plot
+            "gsnLeftString" : ""
+        end setvalues
+    end if
+    if(hasRightString)then
+        setvalues plot
+            "gsnRightString" : ""
+        end setvalues
+    end if
+    if(hasXAxisString)then
+        setvalues plot
+            "tiXAxisString"  : ""
+        end setvalues
+    end if
+    if(hasYAxisString)then
+        setvalues plot
+            "tiYAxisString"  : ""
+        end setvalues
+    end if
+    if(hasXBLabels)then
+        setvalues plot
+            "tmXBLabels"  : onedtond("", dimsizes(res@tmXBLabels))
+        end setvalues
+    end if
+    if(hasYLLabels)then
+        setvalues plot
+            "tmYLLabels"  : onedtond("", dimsizes(res@tmYLLabels))
+        end setvalues
+    end if
+;;--
+    getvalues plot
+        "vpXF"          : vpx
+        "vpYF"          : vpy
+        "vpWidthF"      : vpw
+        "vpHeightF"     : vph
+        "tmXBValues"    : XBV
+        "tmYLValues"    : YLV
+        "tmXBMajorLengthF": tXBML
+        "tmYLMajorLengthF": tYLML
+        "tmXTMajorOutwardLengthF" : tXTMOL
+    end getvalues
+;;~~~~~~~~~~~~~~~~~~~~Title~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if(hasMainString)then
+        ftres = True
+        ftres@fontJust = "BottomCenter"
+        ftres@fontSize = 20
+        ftres@fontNDC = True
+        fontX(wks, plot, res@tiMainString, vpx+vpw/2., vpy+4*tXTMOL, ftres)
+    end if
+    if(hasLeftString)then
+        ftres = True
+        ftres@fontJust = "BottomLeft"
+        ftres@fontSize = 16
+        ftres@fontNDC = True
+        fontX(wks, plot, res@gsnLeftString, vpx, vpy+tXTMOL, ftres)
+    end if
+    if(hasRightString)then
+        ftres = True
+        ftres@fontJust = "BottomRight"
+        ftres@fontSize = 16
+        ftres@fontNDC = True
+        fontX(wks, plot, res@gsnRightString, vpx+vpw, vpy+tXTMOL, ftres)
+    end if
+
+;;~~~~~~~~~~~~~~~X Axis String and Labels~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if(hasXAxisString)then
+        ftres = True
+        ftres@fontJust = "CenterCenter"
+        ftres@fontSize = 16
+        ftres@fontNDC = True
+        XBV_NDC := XBV
+        YLV_NDC := XBV
+        datatondc(plot, XBV, onedtond(YLV(0), dimsizes(XBV)), XBV_NDC, YLV_NDC)
+        fontX(wks, plot, res@tiXAxisString, vpx+vpw/2., YLV_NDC(0)-6*tXBML, ftres)
+    end if 
+    if(hasXBLabels)then
+        print("Font XBLabels")
+        ftres = True
+        ftres@fontJust = "TopCenter"
+        ftres@fontSize = 12
+        ftres@fontNDC = True
+        ftres@fontAngleF = 0
+        XBV_NDC := XBV
+        YLV_NDC := XBV
+        datatondc(plot, XBV, onedtond(YLV(0), dimsizes(XBV)), XBV_NDC, YLV_NDC)
+        fontArray(wks, plot, res@tmXBLabels, XBV_NDC, YLV_NDC(0)-2*tXBML, ftres)
+    end if
+;;~~~~~~~~~~~~~~~Y Axis String and Labels~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if(hasYAxisString)then
+        ftres = True
+        ftres@fontJust = "CenterCenter"
+        ftres@fontSize = 16
+        ftres@fontNDC = True
+        ftres@fontAngleF = 90
+        XBV_NDC := YLV
+        YLV_NDC := YLV
+        datatondc(plot, onedtond(XBV(0), dimsizes(YLV)), YLV, XBV_NDC, YLV_NDC)
+        fontX(wks, plot, res@tiYAxisString, XBV_NDC(0)-6*tYLML, vpy-vph/2., ftres)
+    end if
+    if(hasYLLabels)then
+        print("Font YLLabels")
+        ftres = True
+        ftres@fontJust = "CenterRight"
+        ftres@fontSize = 12
+        ftres@fontNDC = True
+        ftres@fontAngleF = 0
+        XBV_NDC := YLV
+        YLV_NDC := YLV
+        datatondc(plot, onedtond(XBV(0), dimsizes(YLV)), YLV, XBV_NDC, YLV_NDC)
+        fontArray(wks, plot, res@tmYLLabels, XBV_NDC(0)-2*tYLML, YLV_NDC, ftres)
+    end if 
 end
